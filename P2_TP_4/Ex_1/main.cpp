@@ -34,7 +34,7 @@ void main()
 
 		SaveBinary("save/numbers_result.dat", nums);
 	}
-	catch (const std::exception& e)
+	catch (const exception& e)
 	{
 		cerr << "Error: " << e.what() << endl;
 	}
@@ -54,7 +54,8 @@ void LoadBinary(string filePath, vector<int>& nums)
 
 	int size;
 
-	//en esta linea no hago el push asi salteo el prier valor que es el encabezado (en este caso tenemos encabezado)
+	//en esta linea no hago el push asi salteo el primer valor
+	//que es el encabezado (en este caso tenemos encabezado)
 	file.read(reinterpret_cast<char*>(&size), sizeof(size));
 
 	if (!file) 
