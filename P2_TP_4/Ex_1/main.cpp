@@ -1,127 +1,82 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <stdexcept>
+#include <string>
+#include <sstream>
 #include <algorithm>
 
-using namespace std;
 
-void LoadBinary(string filePath, vector<int>& nums);
-void SaveBinary(const string filePath, vector<int>& nums);
-void ShowData(vector<int>& nums);
-void SortAndDuplicates(vector<int>& nums);
-
-void main()
+int main() 
 {
-	try
-	{
-		vector<int> nums = vector<int>();
-		int totalNums;
+    try 
+    {
+        LoadBinary("secret_message.txt");
+    }
+    catch (const std::exception& e) 
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
 
-		LoadBinary("save/numbers_1.dat", nums);
-		LoadBinary("save/numbers_2.dat", nums);
-
-		cout << "Values found: " << endl;
-
-		ShowData(nums);
-
-		cout << endl << endl;
-
-		SortAndDuplicates(nums);
-
-		cout << "Values without duplicates: " << endl;
-
-		ShowData(nums);
-
-		SaveBinary("save/numbers_result.dat", nums);
-	}
-	catch (const exception& e)
-	{
-		cerr << "Error: " << e.what() << endl;
-	}
-
-	cin.get();
-	cin.get();
+    return 0;
 }
 
-void LoadBinary(string filePath, vector<int>& nums)
-{
-	ifstream file(filePath, ios::binary);
+// Función para decodificar base64
+std::string base64_decode(const std::string& in) {
+    std::string out;
+    std::vector<int> T(256, -1);
+    for (int i = 0; i < 64; i++) T["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[i]] = i;
 
-	if (!file) 
-	{
-		throw runtime_error("Unable to open file " + filePath);
-	}
-
-	int size;
-
-	//en esta linea no hago el push asi salteo el primer valor
-	//que es el encabezado (en este caso tenemos encabezado)
-	file.read(reinterpret_cast<char*>(&size), sizeof(size));
-
-	if (!file) 
-	{
-		throw runtime_error("Error reading the size from " + filePath);
-	}
-
-	nums.reserve(nums.size() + size);
-
-	for (int i = 0; i < size; ++i) 
-	{
-		int value;
-
-		file.read(reinterpret_cast<char*>(&value), sizeof(value));
-
-		if (!file)
-		{
-			throw runtime_error("Error reading value from " + filePath);
-		}
-
-		nums.push_back(value);
-	}
+    int val = 0, valb = -8;
+    for (unsigned char c : in) {
+        if (T[c] == -1) break;
+        val = (val << 6) + T[c];
+        valb += 6;
+        if (valb >= 0) {
+            out.push_back(char((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    return out;
 }
 
-void SaveBinary(const string filePath, vector<int>& nums)
-{
-	ofstream file(filePath, ios::binary);
+void LoadBinary(const std::string& filePath) {
+    // Leer el archivo base64 como una cadena de texto
+    std::ifstream file(filePath);
+    if (!file) {
+        throw std::runtime_error("Unable to open file " + filePath);
+    }
 
-	if (!file) 
-	{
-		throw runtime_error("Unable to open file " + filePath);
-	}
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string base64Content = buffer.str();
+    file.close();
 
-	int size = nums.size();
+    // Decodificar el contenido base64
+    std::string binaryContent = base64_decode(base64Content);
 
-	file.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    // Crear un stream a partir del contenido binario decodificado
+    std::istringstream binaryStream(binaryContent, std::ios::binary);
 
-	if (!file) 
-	{
-		throw runtime_error("Error writing the size to " + filePath);
-	}
+    int size;
 
-	for (int value : nums)
-	{
-		file.write(reinterpret_cast<const char*>(&value), sizeof(value));
+    // Leer el encabezado (primer valor) y el tamaño
+    binaryStream.read(reinterpret_cast<char*>(&size), sizeof(size));
+    if (!binaryStream) {
+        throw std::runtime_error("Error reading the size from " + filePath);
+    }
 
-		if (!file) 
-		{
-			throw runtime_error("Error writing value to " + filePath);
-		}
-	}
+    // Leer los valores binarios
+    for (int i = 0; i < size; ++i) {
+        int value;
+        binaryStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        if (!binaryStream) {
+            throw std::runtime_error("Error reading value from " + filePath);
+        }
+
+        // Aquí podrías procesar el valor leído, por ejemplo, imprimirlo
+        std::cout << "Value " << i << ": " << value << std::endl;
+    }
 }
 
-void ShowData(vector<int>& nums)
-{
-	for (auto it = nums.begin(); it != nums.end(); ++it)
-	{
-		cout << *it << ", ";
-	}
-}
 
-void SortAndDuplicates(vector<int>& nums)
-{
-	sort(nums.begin(), nums.end());
-
-	vector<int>::iterator last = unique(nums.begin(), nums.end());
-
-	nums.erase(last, nums.end());
-}
